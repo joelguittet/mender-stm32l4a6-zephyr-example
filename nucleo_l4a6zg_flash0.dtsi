@@ -1,0 +1,60 @@
+/**
+ * @file      nucleo_l4a6zg_flash0.dtsi
+ * @brief     Nucleo STM32L4A6 flash0 overlay include
+ *
+ * MIT License
+ *
+ * Copyright (c) 2022-2023 joelguittet and mender-mcu-client contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+&flash0 {
+    partitions {
+        compatible = "fixed-partitions";
+        #address-cells = <1>;
+        #size-cells = <1>;
+        /* Bootloader slot: 56KB */
+        boot_partition: partition@0 {
+            label = "mcuboot";
+            reg = <0x00000000 DT_SIZE_K(56)>;
+            read-only;
+        };
+        /* Application slot: 448KB */
+        slot0_partition: partition@e000 {
+            label = "image-0";
+            reg = <0x0000E000 DT_SIZE_K(448)>;
+        };
+        /* Update slot: 448KB */
+        slot1_partition: partition@7e000 {
+            label = "image-1";
+            reg = <0x0007E000 DT_SIZE_K(448)>;
+        };
+        /* Swap slot: 64KB */
+        scratch_partition: partition@ee000 {
+            label = "image-scratch";
+            reg = <0x000EE000 DT_SIZE_K(64)>;
+        };
+        /* Storage slot: 8KB */
+        storage_partition: partition@fe000 {
+            label = "storage";
+            reg = <0x000FE000 DT_SIZE_K(8)>;
+        };
+    };
+};

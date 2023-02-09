@@ -1,0 +1,6 @@
+[submodule "cJSON/cJSON"]
+	path = cJSON/cJSON
+	url = https://github.com/DaveGamble/cJSON.git
+[submodule "mender-mcu-client"]
+	path = mender-mcu-client
+	url = https://github.com/joelguittet/mender-mcu-client.git

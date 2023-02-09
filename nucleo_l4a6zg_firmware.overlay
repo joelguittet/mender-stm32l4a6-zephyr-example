@@ -1,0 +1,55 @@
+/**
+ * @file      nucleo_l4a6zg_firmware.overlay
+ * @brief     Nucleo STM32L4A6 firmware overlay
+ *
+ * MIT License
+ *
+ * Copyright (c) 2022-2023 joelguittet and mender-mcu-client contributors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "nucleo_l4a6zg_flash0.dtsi"
+
+/ {
+    chosen {
+        zephyr,code-partition = &slot0_partition;
+    };
+};
+
+&arduino_spi {
+    status = "okay";
+    eth_w5500: eth_w5500@0 {
+        compatible = "wiznet,w5500";
+        reg = <0x0>;
+        spi-max-frequency = <8000000>;
+        int-gpios = <&arduino_header 15 GPIO_ACTIVE_LOW>; /* D9 */
+        reset-gpios = <&arduino_header 14 GPIO_ACTIVE_LOW>; /* D8 */
+        local-mac-address = [00 00 00 01 02 03];
+    };
+};
+
+&clk_hsi48 {
+    /* HSI48 required for RNG */
+    status = "okay";
+};
+
+&rng {
+    status = "okay";
+};
