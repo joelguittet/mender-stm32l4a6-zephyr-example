@@ -28,6 +28,7 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(mender_stm32l4a6_zephyr_example, LOG_LEVEL_INF);
 
+#include <zephyr/kernel.h>
 #include <zephyr/net/net_if.h>
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/sys/reboot.h>
@@ -49,7 +50,14 @@ static const unsigned char ca_certificate[] = {
 #endif
 
 #include "mender-client.h"
+#include "mender-inventory.h"
 #include "mender-ota.h"
+
+/**
+ * @brief Mender client events
+ */
+static K_EVENT_DEFINE(mender_client_events);
+#define MENDER_CLIENT_EVENT_RESTART (1 << 0)
 
 /**
  * @brief Network management callback
@@ -65,10 +73,12 @@ static struct net_mgmt_event_callback mgmt_cb;
 static void
 net_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struct net_if *iface) {
 
+    /* Check event */
     if (NET_EVENT_IPV4_ADDR_ADD != mgmt_event) {
         return;
     }
 
+    /* Print interface information */
     for (int i = 0; i < NET_IF_MAX_IPV4_ADDR; i++) {
         if (NET_ADDR_DHCP == iface->config.ip.ipv4->unicast[i].addr_type) {
             char buf[NET_IPV4_ADDR_LEN];
@@ -87,12 +97,29 @@ net_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struc
 static mender_err_t
 authentication_success_cb(void) {
 
+    mender_err_t ret;
+
     LOG_INF("Mender client authenticated");
+
+    /* Activate mender add-ons */
+    /* The application can activate each add-on depending of the current status of the device */
+    /* In this example, add-ons are activated has soon as authentication succeeds */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
+    if (MENDER_OK != (ret = mender_inventory_activate())) {
+        LOG_ERR("Unable to activate inventory add-on");
+        return ret;
+    }
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
 
     /* Validate the image if it is still pending */
     /* Note it is possible to do multiple diagnosic tests before validating the image */
     /* In this example, authentication success with the mender-server is enough */
-    return mender_ota_mark_app_valid_cancel_rollback();
+    if (MENDER_OK != (ret = mender_ota_mark_app_valid_cancel_rollback())) {
+        LOG_ERR("Unable to validate the image");
+        return ret;
+    }
+
+    return ret;
 }
 
 /**
@@ -113,7 +140,10 @@ authentication_failure_cb(void) {
     /* Note it is possible to invalid the image later to permit clean closure before reboot */
     /* In this example, several authentication failures with the mender-server is enough */
     if (tries >= CONFIG_EXAMPLE_AUTHENTICATION_FAILS_MAX_TRIES) {
-        ret = mender_ota_mark_app_invalid_rollback_and_reboot();
+        if (MENDER_OK != (ret = mender_ota_mark_app_invalid_rollback_and_reboot())) {
+            LOG_ERR("Unable to invalidate the image");
+            return ret;
+        }
     }
 
     return ret;
@@ -141,11 +171,8 @@ deployment_status_cb(mender_deployment_status_t status, char *desc) {
 static mender_err_t
 restart_cb(void) {
 
-    /* Restart */
-    /* Note it is possible to not restart the system right now depending of the application */
-    /* In this example, immediate restart is enough */
-    LOG_INF("Restarting system");
-    sys_reboot(SYS_REBOOT_WARM);
+    /* Application is responsible to shutdown and restart the system now */
+    k_event_post(&mender_client_events, MENDER_CLIENT_EVENT_RESTART);
 
     return MENDER_OK;
 }
@@ -172,12 +199,6 @@ main(void) {
     char                 mac_address[18];
     struct net_linkaddr *linkaddr = net_if_get_link_addr(iface);
     assert(NULL != linkaddr);
-    /**
-     * TODO this is a temporary hack because the W5500 driver does not take care of the local-mac-address
-     * This cause mender server to see the device with a different MAC at each boot because the MAC is randomized
-     * This will be solved when https://github.com/zephyrproject-rtos/zephyr/pull/48763 will be merged
-     */
-#if 0
     sprintf(mac_address,
             "%02x:%02x:%02x:%02x:%02x:%02x",
             linkaddr->addr[0],
@@ -186,9 +207,6 @@ main(void) {
             linkaddr->addr[3],
             linkaddr->addr[4],
             linkaddr->addr[5]);
-#else
-    sprintf(mac_address, "00:08:dc:01:02:03");
-#endif
 
     /* Retrieve running version of the STM32 */
     LOG_INF("Running project '%s' version '%s'", PROJECT_NAME, PROJECT_VERSION);
@@ -207,9 +225,7 @@ main(void) {
                                                     .host                         = CONFIG_MENDER_SERVER_HOST,
                                                     .tenant_token                 = CONFIG_MENDER_SERVER_TENANT_TOKEN,
                                                     .authentication_poll_interval = CONFIG_MENDER_CLIENT_AUTHENTICATION_POLL_INTERVAL,
-                                                    .inventory_poll_interval      = CONFIG_MENDER_CLIENT_INVENTORY_POLL_INTERVAL,
                                                     .update_poll_interval         = CONFIG_MENDER_CLIENT_UPDATE_POLL_INTERVAL,
-                                                    .restart_poll_interval        = CONFIG_MENDER_CLIENT_RESTART_POLL_INTERVAL,
                                                     .recommissioning              = false };
     mender_client_callbacks_t mender_client_callbacks = { .authentication_success = authentication_success_cb,
                                                           .authentication_failure = authentication_failure_cb,
@@ -223,9 +239,35 @@ main(void) {
     assert(MENDER_OK == mender_client_init(&mender_client_config, &mender_client_callbacks));
     LOG_INF("Mender client initialized");
 
+    /* Initialize mender add-ons */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
+    mender_inventory_config_t mender_inventory_config
+        = { .artifact_name = artifact_name, .device_type = device_type, .poll_interval = CONFIG_MENDER_CLIENT_INVENTORY_POLL_INTERVAL };
+    assert(MENDER_OK == mender_inventory_init(&mender_inventory_config));
+    LOG_INF("Mender inventory initialized");
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
+
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
     /* Set mender inventory (this is just an example) */
-    mender_inventory_t inventory[] = { { .name = "latitude", .value = "45.8325" }, { .name = "longitude", .value = "6.864722" } };
-    if (MENDER_OK != mender_client_set_inventory(inventory, sizeof(inventory) / sizeof(inventory[0]))) {
+    mender_inventory_t inventory[]
+        = { { .name = "latitude", .value = "45.8325" }, { .name = "longitude", .value = "6.864722" }, { .name = NULL, .value = NULL } };
+    if (MENDER_OK != mender_inventory_set(inventory)) {
         LOG_ERR("Unable to set mender inventory");
     }
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
+
+    /* Wait for mender-mcu-client events */
+    k_event_wait_all(&mender_client_events, MENDER_CLIENT_EVENT_RESTART, false, K_FOREVER);
+
+    /* Release mender add-ons */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
+    mender_inventory_exit();
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
+
+    /* Exit mender-client */
+    mender_client_exit();
+
+    /* Restart */
+    LOG_INF("Restarting system");
+    sys_reboot(SYS_REBOOT_WARM);
 }

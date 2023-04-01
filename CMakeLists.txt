@@ -26,17 +26,17 @@
 cmake_minimum_required(VERSION 3.20.0)
 
 # Read VERSION
-file(STRINGS ${CMAKE_SOURCE_DIR}/VERSION PROJECT_VER LIMIT_COUNT 1)
-set_property(DIRECTORY . APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/VERSION)
+file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" PROJECT_VER LIMIT_COUNT 1)
+set_property(DIRECTORY . APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/VERSION")
 
 # Extra components
 list(APPEND ZEPHYR_EXTRA_MODULES
-    ${CMAKE_CURRENT_SOURCE_DIR}/cJSON
-    ${CMAKE_CURRENT_SOURCE_DIR}/mender-mcu-client
+    "${CMAKE_CURRENT_SOURCE_DIR}/cJSON"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mender-mcu-client"
 )
 
 # Kconfig options
-set(KCONFIG_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/Kconfig)
+set(KCONFIG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/Kconfig")
 
 # Device tree overlay file
 set(DTC_OVERLAY_FILE "${CMAKE_CURRENT_SOURCE_DIR}/nucleo_l4a6zg_firmware.overlay")
@@ -46,11 +46,11 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(mender-stm32l4a6-zephyr-example)
 
 # Sources
-target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE "src/main.c")
 
 # Definitions
 target_compile_definitions(app PRIVATE PROJECT_NAME="mender-stm32l4a6-zephyr-example")
 target_compile_definitions(app PRIVATE PROJECT_VERSION="${PROJECT_VER}")
 
 # Generate RootCA include file
-generate_inc_file_for_target(app src/SFSRootCAG2.cer ${ZEPHYR_BINARY_DIR}/include/generated/SFSRootCAG2.cer.inc)
+generate_inc_file_for_target(app "src/SFSRootCAG2.cer" "${ZEPHYR_BINARY_DIR}/include/generated/SFSRootCAG2.cer.inc")

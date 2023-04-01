@@ -41,7 +41,7 @@
         spi-max-frequency = <8000000>;
         int-gpios = <&arduino_header 15 GPIO_ACTIVE_LOW>; /* D9 */
         reset-gpios = <&arduino_header 14 GPIO_ACTIVE_LOW>; /* D8 */
-        local-mac-address = [00 00 00 01 02 03];
+        local-mac-address = [00 08 DC 01 02 03];
     };
 };
 
