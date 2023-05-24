@@ -50,6 +50,7 @@ static const unsigned char ca_certificate[] = {
 #endif
 
 #include "mender-client.h"
+#include "mender-configure.h"
 #include "mender-inventory.h"
 #include "mender-ota.h"
 
@@ -104,6 +105,12 @@ authentication_success_cb(void) {
     /* Activate mender add-ons */
     /* The application can activate each add-on depending of the current status of the device */
     /* In this example, add-ons are activated has soon as authentication succeeds */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
+    if (MENDER_OK != (ret = mender_configure_activate())) {
+        LOG_ERR("Unable to activate configure add-on");
+        return ret;
+    }
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
     if (MENDER_OK != (ret = mender_inventory_activate())) {
         LOG_ERR("Unable to activate inventory add-on");
@@ -177,10 +184,39 @@ restart_cb(void) {
     return MENDER_OK;
 }
 
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
+#ifndef CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE
+
+/**
+ * @brief Device configuration updated
+ * @param configuration Device configuration
+ * @return MENDER_OK if the function succeeds, error code otherwise
+ */
+static mender_err_t
+config_updated(mender_keystore_t *configuration) {
+
+    /* Application can use the new device configuration now */
+    /* In this example, we just print the content of the configuration received from the Mender server */
+    if (NULL != configuration) {
+        size_t index = 0;
+        LOG_INF("Device configuration received from the server");
+        while ((NULL != configuration[index].name) && (NULL != configuration[index].value)) {
+            LOG_INF("Key=%s, value=%s", configuration[index].name, configuration[index].value);
+            index++;
+        }
+    }
+
+    return MENDER_OK;
+}
+
+#endif /* CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE */
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
+
 /**
  * @brief Main function
+ * @return Always returns 0
  */
-void
+int
 main(void) {
 
     /* Initialize network */
@@ -240,16 +276,41 @@ main(void) {
     LOG_INF("Mender client initialized");
 
     /* Initialize mender add-ons */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
+    mender_configure_config_t    mender_configure_config    = { .refresh_interval = CONFIG_MENDER_CLIENT_CONFIGURE_REFRESH_INTERVAL };
+    mender_configure_callbacks_t mender_configure_callbacks = {
+#ifndef CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE
+        .config_updated = config_updated,
+#endif /* CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE */
+    };
+    assert(MENDER_OK == mender_configure_init(&mender_configure_config, &mender_configure_callbacks));
+    LOG_INF("Mender configure initialized");
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
-    mender_inventory_config_t mender_inventory_config
-        = { .artifact_name = artifact_name, .device_type = device_type, .poll_interval = CONFIG_MENDER_CLIENT_INVENTORY_POLL_INTERVAL };
+    mender_inventory_config_t mender_inventory_config = { .refresh_interval = CONFIG_MENDER_CLIENT_INVENTORY_REFRESH_INTERVAL };
     assert(MENDER_OK == mender_inventory_init(&mender_inventory_config));
     LOG_INF("Mender inventory initialized");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
 
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
+    /* Get mender configuration (this is just an example to illustrate the API) */
+    mender_keystore_t *configuration;
+    if (MENDER_OK != mender_configure_get(&configuration)) {
+        LOG_ERR("Unable to get mender configuration");
+    } else if (NULL != configuration) {
+        size_t index = 0;
+        LOG_INF("Device configuration retrieved");
+        while ((NULL != configuration[index].name) && (NULL != configuration[index].value)) {
+            LOG_INF("Key=%s, value=%s", configuration[index].name, configuration[index].value);
+            index++;
+        }
+        mender_utils_keystore_delete(configuration);
+    }
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
+
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
-    /* Set mender inventory (this is just an example) */
-    mender_inventory_t inventory[]
+    /* Set mender inventory (this is just an example to illustrate the API) */
+    mender_keystore_t inventory[]
         = { { .name = "latitude", .value = "45.8325" }, { .name = "longitude", .value = "6.864722" }, { .name = NULL, .value = NULL } };
     if (MENDER_OK != mender_inventory_set(inventory)) {
         LOG_ERR("Unable to set mender inventory");
@@ -263,6 +324,9 @@ main(void) {
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
     mender_inventory_exit();
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
+    mender_configure_exit();
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
 
     /* Exit mender-client */
     mender_client_exit();
@@ -270,4 +334,6 @@ main(void) {
     /* Restart */
     LOG_INF("Restarting system");
     sys_reboot(SYS_REBOOT_WARM);
+
+    return 0;
 }
