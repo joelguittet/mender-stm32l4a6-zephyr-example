@@ -32,7 +32,8 @@ You may want to customize few interesting settings:
 - `MENDER_SERVER_HOST` if using your own Mender server instance. Tenant Token is not required in this case.
 - `MENDER_CLIENT_AUTHENTICATION_POLL_INTERVAL` is the interval to retry authentication on the mender server.
 - `MENDER_CLIENT_UPDATE_POLL_INTERVAL` is the interval to check for new deployments.
-- `MENDER_CLIENT_INVENTORY_POLL_INTERVAL` is the interval to publish inventory data.
+- `MENDER_CLIENT_INVENTORY_REFRESH_INTERVAL` is the interval to publish inventory data.
+- `MENDER_CLIENT_CONFIGURE_REFRESH_INTERVAL` is the interval to refresh device configuration.
 
 Other settings are available in the Kconfig in sections "Example Configuration" and "Mender client Configuration". You can also refer to the mender-mcu-client API.
 
@@ -61,34 +62,33 @@ After flashing the application on the NUCLEO-L4A6ZG evaluation board and display
 
 ```
 [00:00:00.011,000] <inf> eth_w5500: W5500 Initialized
-*** Booting Zephyr OS build zephyr-v3.3.0-2372-gda633c614807 ***
+*** Booting Zephyr OS build zephyr-v3.3.0-3386-gfa5117225af9 ***
 [00:00:00.028,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.1'
 [00:00:00.046,000] <inf> fs_nvs: 4 Sectors of 2048 bytes
 [00:00:00.054,000] <inf> fs_nvs: alloc wra: 0, 7e8
 [00:00:00.061,000] <inf> fs_nvs: data wra: 0, 0
 [00:00:00.068,000] <inf> mender_stm32l4a6_zephyr_example: Mender client initialized
-[00:00:00.079,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
-[00:00:00.089,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (107): Authentication keys are not available
-[00:00:00.106,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (330): Generating authentication keys...
-[00:00:05.052,000] <inf> mender_stm32l4a6_zephyr_example: Your address: 192.168.1.216
-[00:00:05.063,000] <inf> mender_stm32l4a6_zephyr_example: Lease time: 43200 seconds
-[00:00:05.073,000] <inf> mender_stm32l4a6_zephyr_example: Subnet: 255.255.255.0
-[00:00:05.083,000] <inf> mender_stm32l4a6_zephyr_example: Router: 192.168.1.1
-[00:01:00.069,000] <wrn> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/rtos/zephyr/src/mender-rtos.c (292): Work 'mender_client_initialization' is already pending or execg
-[00:02:00.069,000] <wrn> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/rtos/zephyr/src/mender-rtos.c (292): Work 'mender_client_initialization' is already pending or execg
-[00:03:00.069,000] <wrn> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/rtos/zephyr/src/mender-rtos.c (292): Work 'mender_client_initialization' is already pending or execg
-[00:04:00.069,000] <wrn> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/rtos/zephyr/src/mender-rtos.c (292): Work 'mender_client_initialization' is already pending or execg
-[00:05:00.069,000] <wrn> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/rtos/zephyr/src/mender-rtos.c (292): Work 'mender_client_initialization' is already pending or execg
-[00:05:17.808,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (170): OTA ID not available
-[00:05:26.780,000] <err> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-api.c (692): [401] Unauthorized: dev auth: unauthorized
-[00:05:26.795,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authentication failed (1/3)
+[00:00:00.079,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (262): Device configuration not available
+[00:00:00.095,000] <inf> mender_stm32l4a6_zephyr_example: Mender configure initialized
+[00:00:00.105,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
+[00:00:00.116,000] <inf> mender_stm32l4a6_zephyr_example: Device configuration retrieved
+[00:00:00.127,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (111): Authentication keys are not available
+[00:00:00.143,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (344): Generating authentication keys...
+[00:00:06.052,000] <inf> mender_stm32l4a6_zephyr_example: Your address: 192.168.1.216
+[00:00:06.062,000] <inf> mender_stm32l4a6_zephyr_example: Lease time: 43200 seconds
+[00:00:06.073,000] <inf> mender_stm32l4a6_zephyr_example: Subnet: 255.255.255.0
+[00:00:06.082,000] <inf> mender_stm32l4a6_zephyr_example: Router: 192.168.1.1
+[00:13:45.371,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (187): OTA ID not available
+[00:13:54.404,000] <err> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-api.c (737): [401] Unauthorized: dev auth: unauthorized
+[00:13:54.419,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authentication failed (1/3)
 ```
 
 Which means you now have generated authentication keys on the device. Generating is a bit long but authentication keys are stored in `storage_partition` of the MCU so it's done only the first time the device is flashed. You now have to accept your device on the mender interface. Once it is accepted on the mender interface the following will be displayed:
 
 ```
-[00:09:56.852,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
-[00:09:59.691,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (459): No deployment available
+[00:19:54.507,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
+[00:19:57.348,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (465): Checking for deployment...
+[00:19:58.802,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (473): No deployment available
 ```
 
 Congratulation! Your device is connected to the mender server. Device type is `mender-stm32l4a6-zephyr-example` and the current software version is displayed.
@@ -115,32 +115,37 @@ Upload the artifact `mender-stm32l4a6-zephyr-example-v0.2.mender` to the mender 
 The device checks for the new deployment, downloads the artifact and installs it on the `slot1_partition`. Then it reboots to apply the update:
 
 ```
-[00:10:58.302,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (471): Downloading deployment artifact with id '3ef72042-9e0d-4a47-bcdc-fa475ac5b58-
-[00:10:59.775,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'downloading'
-[00:11:12.463,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (40): Start flashing OTA artifact 'zephyr-signed.bin' with size 286660
-[00:11:37.623,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (480): Download done, installing artifact
-[00:11:39.020,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'installing'
-[00:11:50.459,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'rebooting'
-[00:11:50.470,000] <inf> mender_stm32l4a6_zephyr_example: Restarting system
-uart:~$ *** Booting Zephyr OS build zephyr-v3.3.0-2372-gda633c614807 ***
+[00:00:11.966,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (463): Checking for deployment...
+[00:00:13.381,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (483): Downloading deployment artifact with id '71c7fd71-af5d-4aa4-8ee3-f1f2e798975-
+[00:00:14.813,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'downloading'
+[00:00:17.327,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-artifact.c (380): Artifact has valid version
+[00:00:17.346,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (41): Start flashing OTA artifact 'zephyr-signed.bin' with size 293824
+[00:00:43.415,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (493): Download done, installing artifact
+[00:00:44.830,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'installing'
+[00:02:24.896,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'rebooting'
+[00:02:24.907,000] <inf> mender_stm32l4a6_zephyr_example: Restarting system
+uart:~$ *** Booting Zephyr OS build zephyr-v3.3.0-3386-gfa5117225af9 ***
 
 
 [00:00:00.011,000] <inf> eth_w5500: W5500 Initialized
-*** Booting Zephyr OS build zephyr-v3.3.0-2372-gda633c614807 ***
+*** Booting Zephyr OS build zephyr-v3.3.0-3386-gfa5117225af9 ***
 [00:00:00.028,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.2'
 [00:00:00.045,000] <inf> fs_nvs: 4 Sectors of 2048 bytes
 [00:00:00.053,000] <inf> fs_nvs: alloc wra: 1, 7d0
 [00:00:00.060,000] <inf> fs_nvs: data wra: 1, 1f8
 [00:00:00.068,000] <inf> mender_stm32l4a6_zephyr_example: Mender client initialized
-[00:00:00.078,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
+[00:00:00.078,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (262): Device configuration not available
+[00:00:00.094,000] <inf> mender_stm32l4a6_zephyr_example: Mender configure initialized
+[00:00:00.105,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
+[00:00:00.115,000] <inf> mender_stm32l4a6_zephyr_example: Device configuration retrieved
 [00:00:08.050,000] <inf> mender_stm32l4a6_zephyr_example: Your address: 192.168.1.216
 [00:00:08.060,000] <inf> mender_stm32l4a6_zephyr_example: Lease time: 43200 seconds
 [00:00:08.071,000] <inf> mender_stm32l4a6_zephyr_example: Subnet: 255.255.255.0
 [00:00:08.081,000] <inf> mender_stm32l4a6_zephyr_example: Router: 192.168.1.1
-[00:00:19.070,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
-[00:00:19.081,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (125): Application has been mark valid and rollback canceled
-[00:00:20.846,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'success'
-[00:00:33.629,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (459): No deployment available
+[00:00:19.140,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
+[00:00:19.151,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (145): Application has been mark valid and rollback canceled
+[00:00:20.619,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'success'
+[00:00:33.629,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (473): No deployment available
 ```
 
 Congratulation! You have updated the device. Mender server displays the success of the deployment.
