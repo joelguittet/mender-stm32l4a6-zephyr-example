@@ -258,10 +258,10 @@ main(void) {
     mender_client_config_t    mender_client_config    = { .mac_address                  = mac_address,
                                                     .artifact_name                = artifact_name,
                                                     .device_type                  = device_type,
-                                                    .host                         = CONFIG_MENDER_SERVER_HOST,
-                                                    .tenant_token                 = CONFIG_MENDER_SERVER_TENANT_TOKEN,
-                                                    .authentication_poll_interval = CONFIG_MENDER_CLIENT_AUTHENTICATION_POLL_INTERVAL,
-                                                    .update_poll_interval         = CONFIG_MENDER_CLIENT_UPDATE_POLL_INTERVAL,
+                                                    .host                         = NULL,
+                                                    .tenant_token                 = NULL,
+                                                    .authentication_poll_interval = 0,
+                                                    .update_poll_interval         = 0,
                                                     .recommissioning              = false };
     mender_client_callbacks_t mender_client_callbacks = { .authentication_success = authentication_success_cb,
                                                           .authentication_failure = authentication_failure_cb,
@@ -277,7 +277,7 @@ main(void) {
 
     /* Initialize mender add-ons */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
-    mender_configure_config_t    mender_configure_config    = { .refresh_interval = CONFIG_MENDER_CLIENT_CONFIGURE_REFRESH_INTERVAL };
+    mender_configure_config_t    mender_configure_config    = { .refresh_interval = 0 };
     mender_configure_callbacks_t mender_configure_callbacks = {
 #ifndef CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE
         .config_updated = config_updated,
@@ -287,7 +287,7 @@ main(void) {
     LOG_INF("Mender configure initialized");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
-    mender_inventory_config_t mender_inventory_config = { .refresh_interval = CONFIG_MENDER_CLIENT_INVENTORY_REFRESH_INTERVAL };
+    mender_inventory_config_t mender_inventory_config = { .refresh_interval = 0 };
     assert(MENDER_OK == mender_inventory_init(&mender_inventory_config));
     LOG_INF("Mender inventory initialized");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
