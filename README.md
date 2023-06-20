@@ -9,9 +9,11 @@
 
 ## Getting started
 
-This project is used with a [NUCLEO-L4A6ZG](https://www.st.com/en/evaluation-tools/nucleo-l4a6zg.html) evaluation board and an Ethernet [W5500](https://www.wiznet.io/product-item/w5500) module available low cost at several places. The device tree overlay `nucleo_l4a6zg_firmware.overlay` specifies the wiring of the module, and it is possible to adapt it to your own hardware.
+This project is used with a [NUCLEO-L4A6ZG](https://www.st.com/en/evaluation-tools/nucleo-l4a6zg.html) evaluation board and an Ethernet [W5500](https://www.wiznet.io/product-item/w5500) module available low cost at several places. The device tree overlay `nucleo_l4a6zg_firmware.overlay` specifies the wiring of the module, as illustrated on the following image, and it is possible to adapt it to your own hardware.
 
-The project is built using Zephyr RTOS v3.3.0. It depends on [cJSON](https://github.com/DaveGamble/cJSON). There is no other dependencies.
+![NUCLEO-L4A6ZG and W5500 wiring](https://raw.githubusercontent.com/joelguittet/mender-stm32l4a6-zephyr-example/master/.github/docs/wiring.png)
+
+The project is built using Zephyr RTOS v3.4.0 and Zephyr SDK >= v0.16.0. It depends on [cJSON](https://github.com/DaveGamble/cJSON). There is no other dependencies.
 
 To start using Mender, we recommend that you begin with the Getting started section in [the Mender documentation](https://docs.mender.io).
 
@@ -52,7 +54,7 @@ Use the following command to build, sign and flash the application (please adapt
 
 ```
 west build -p always -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
-$HOME/zephyrproject/bootloader/mcuboot/scripts/imgtool.py sign --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --header-size 0x200 -S 0x7E000 --align 8 --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION) build/zephyr/zephyr.hex build/zephyr/zephyr-signed.hex
+$HOME/zephyrproject/bootloader/mcuboot/scripts/imgtool.py sign --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --header-size 0x200 -S 0x7E000 --align 8 --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) build/zephyr/zephyr.hex build/zephyr/zephyr-signed.hex
 west flash --hex-file build/zephyr/zephyr-signed.hex
 ```
 
@@ -61,34 +63,32 @@ west flash --hex-file build/zephyr/zephyr-signed.hex
 After flashing the application on the NUCLEO-L4A6ZG evaluation board and displaying logs, you should be able to see the following:
 
 ```
-[00:00:00.011,000] <inf> eth_w5500: W5500 Initialized
-*** Booting Zephyr OS build zephyr-v3.3.0-3386-gfa5117225af9 ***
-[00:00:00.028,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.1'
-[00:00:00.046,000] <inf> fs_nvs: 4 Sectors of 2048 bytes
-[00:00:00.054,000] <inf> fs_nvs: alloc wra: 0, 7e8
+[00:00:00.012,000] <inf> eth_w5500: W5500 Initialized
+*** Booting Zephyr OS build zephyr-v3.4.0 ***
+[00:00:00.027,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.1'
+[00:00:00.045,000] <inf> fs_nvs: 4 Sectors of 2048 bytes
+[00:00:00.053,000] <inf> fs_nvs: alloc wra: 0, 7e8
 [00:00:00.061,000] <inf> fs_nvs: data wra: 0, 0
 [00:00:00.068,000] <inf> mender_stm32l4a6_zephyr_example: Mender client initialized
-[00:00:00.079,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (262): Device configuration not available
-[00:00:00.095,000] <inf> mender_stm32l4a6_zephyr_example: Mender configure initialized
-[00:00:00.105,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
-[00:00:00.116,000] <inf> mender_stm32l4a6_zephyr_example: Device configuration retrieved
-[00:00:00.127,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (111): Authentication keys are not available
-[00:00:00.143,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (344): Generating authentication keys...
-[00:00:06.052,000] <inf> mender_stm32l4a6_zephyr_example: Your address: 192.168.1.216
-[00:00:06.062,000] <inf> mender_stm32l4a6_zephyr_example: Lease time: 43200 seconds
-[00:00:06.073,000] <inf> mender_stm32l4a6_zephyr_example: Subnet: 255.255.255.0
-[00:00:06.082,000] <inf> mender_stm32l4a6_zephyr_example: Router: 192.168.1.1
-[00:13:45.371,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (187): OTA ID not available
-[00:13:54.404,000] <err> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-api.c (737): [401] Unauthorized: dev auth: unauthorized
-[00:13:54.419,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authentication failed (1/3)
+[00:00:00.078,000] <inf> mender_stm32l4a6_zephyr_example: Mender configure initialized
+[00:00:00.089,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
+[00:00:00.110,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (111): Authentication keys are not available
+[00:00:00.126,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (322): Generating authentication keys...
+[00:00:05.051,000] <inf> mender_stm32l4a6_zephyr_example: Your address: 192.168.1.216
+[00:00:05.061,000] <inf> mender_stm32l4a6_zephyr_example: Lease time: 43200 seconds
+[00:00:05.071,000] <inf> mender_stm32l4a6_zephyr_example: Subnet: 255.255.255.0
+[00:00:05.081,000] <inf> mender_stm32l4a6_zephyr_example: Router: 192.168.1.1
+[00:03:50.215,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (187): OTA ID not available
+[00:03:59.183,000] <err> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-api.c (735): [401] Unauthorized: dev auth: unauthorized
+[00:03:59.198,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authentication failed (1/3)
 ```
 
 Which means you now have generated authentication keys on the device. Generating is a bit long but authentication keys are stored in `storage_partition` of the MCU so it's done only the first time the device is flashed. You now have to accept your device on the mender interface. Once it is accepted on the mender interface the following will be displayed:
 
 ```
-[00:19:54.507,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
-[00:19:57.348,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (465): Checking for deployment...
-[00:19:58.802,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (473): No deployment available
+[00:04:59.233,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
+[00:05:03.588,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (443): Checking for deployment...
+[00:05:04.997,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (451): No deployment available
 ```
 
 Congratulation! Your device is connected to the mender server. Device type is `mender-stm32l4a6-zephyr-example` and the current software version is displayed.
@@ -97,17 +97,17 @@ Congratulation! Your device is connected to the mender server. Device type is `m
 
 First retrieve [mender-artifact](https://docs.mender.io/downloads#mender-artifact) tool.
 
-Change VERSION to `0.2`, rebuild and sign the firmware using the following commands. We previously used `hex` file because it is required to flash the device, but we now use `bin` file that is required for the mender-mcu-client:
+Change `VERSION.txt` file to `0.2`, rebuild and sign the firmware using the following commands. We previously used `hex` file because it is required to flash the device, but we now use `bin` file that is required for the mender-mcu-client:
 
 ```
 west build -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
-$HOME/zephyrproject/bootloader/mcuboot/scripts/imgtool.py sign --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --header-size 0x200 -S 0x7E000 --align 8 --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION) build/zephyr/zephyr.bin build/zephyr/zephyr-signed.bin
+$HOME/zephyrproject/bootloader/mcuboot/scripts/imgtool.py sign --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --header-size 0x200 -S 0x7E000 --align 8 --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) build/zephyr/zephyr.bin build/zephyr/zephyr-signed.bin
 ```
 
 Then create a new artifact using the following command line:
 
 ```
-path/to/mender-artifact write rootfs-image --compression none --device-type mender-stm32l4a6-zephyr-example --artifact-name mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION) --output-path build/zephyr/mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION).mender --file build/zephyr/zephyr-signed.bin
+path/to/mender-artifact write rootfs-image --compression none --device-type mender-stm32l4a6-zephyr-example --artifact-name mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) --output-path build/zephyr/mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt).mender --file build/zephyr/zephyr-signed.bin
 ```
 
 Upload the artifact `mender-stm32l4a6-zephyr-example-v0.2.mender` to the mender server and create a new deployment.
@@ -115,37 +115,37 @@ Upload the artifact `mender-stm32l4a6-zephyr-example-v0.2.mender` to the mender 
 The device checks for the new deployment, downloads the artifact and installs it on the `slot1_partition`. Then it reboots to apply the update:
 
 ```
-[00:00:11.966,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (463): Checking for deployment...
-[00:00:13.381,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (483): Downloading deployment artifact with id '71c7fd71-af5d-4aa4-8ee3-f1f2e798975-
-[00:00:14.813,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'downloading'
-[00:00:17.327,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-artifact.c (380): Artifact has valid version
-[00:00:17.346,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (41): Start flashing OTA artifact 'zephyr-signed.bin' with size 293824
-[00:00:43.415,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (493): Download done, installing artifact
-[00:00:44.830,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'installing'
-[00:02:24.896,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'rebooting'
-[00:02:24.907,000] <inf> mender_stm32l4a6_zephyr_example: Restarting system
-uart:~$ *** Booting Zephyr OS build zephyr-v3.3.0-3386-gfa5117225af9 ***
+[00:07:02.170,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (443): Checking for deployment...
+[00:07:03.608,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (463): Downloading deployment artifact with id '121eb07a-1188-4316-a58d-b798ee60988-
+[00:07:05.062,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'downloading'
+[00:07:07.798,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-artifact.c (380): Artifact has valid version
+[00:07:07.817,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (42): Start flashing OTA artifact 'zephyr-signed.bin' with size 293224
+[00:07:33.707,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (473): Download done, installing artifact
+[00:07:35.124,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'installing'
+[00:09:15.191,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'rebooting'
+[00:09:16.652,000] <inf> mender_stm32l4a6_zephyr_example: Device configuration received from the server
+[00:09:18.039,000] <inf> mender_stm32l4a6_zephyr_example: Restarting system
 
+...
 
-[00:00:00.011,000] <inf> eth_w5500: W5500 Initialized
-*** Booting Zephyr OS build zephyr-v3.3.0-3386-gfa5117225af9 ***
-[00:00:00.028,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.2'
+[00:00:00.012,000] <inf> eth_w5500: W5500 Initialized
+*** Booting Zephyr OS build zephyr-v3.4.0 ***
+[00:00:00.027,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.2'
 [00:00:00.045,000] <inf> fs_nvs: 4 Sectors of 2048 bytes
-[00:00:00.053,000] <inf> fs_nvs: alloc wra: 1, 7d0
+[00:00:00.052,000] <inf> fs_nvs: alloc wra: 1, 7d0
 [00:00:00.060,000] <inf> fs_nvs: data wra: 1, 1f8
-[00:00:00.068,000] <inf> mender_stm32l4a6_zephyr_example: Mender client initialized
-[00:00:00.078,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-storage.c (262): Device configuration not available
-[00:00:00.094,000] <inf> mender_stm32l4a6_zephyr_example: Mender configure initialized
-[00:00:00.105,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
-[00:00:00.115,000] <inf> mender_stm32l4a6_zephyr_example: Device configuration retrieved
-[00:00:08.050,000] <inf> mender_stm32l4a6_zephyr_example: Your address: 192.168.1.216
-[00:00:08.060,000] <inf> mender_stm32l4a6_zephyr_example: Lease time: 43200 seconds
+[00:00:00.067,000] <inf> mender_stm32l4a6_zephyr_example: Mender client initialized
+[00:00:00.077,000] <inf> mender_stm32l4a6_zephyr_example: Mender configure initialized
+[00:00:00.088,000] <inf> mender_stm32l4a6_zephyr_example: Mender inventory initialized
+[00:00:08.051,000] <inf> mender_stm32l4a6_zephyr_example: Your address: 192.168.1.216
+[00:00:08.061,000] <inf> mender_stm32l4a6_zephyr_example: Lease time: 43200 seconds
 [00:00:08.071,000] <inf> mender_stm32l4a6_zephyr_example: Subnet: 255.255.255.0
 [00:00:08.081,000] <inf> mender_stm32l4a6_zephyr_example: Router: 192.168.1.1
-[00:00:19.140,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
-[00:00:19.151,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (145): Application has been mark valid and rollback canceled
-[00:00:20.619,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'success'
-[00:00:33.629,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (473): No deployment available
+[00:00:19.024,000] <inf> mender_stm32l4a6_zephyr_example: Mender client authenticated
+[00:00:19.035,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (146): Application has been mark valid and rollback canceled
+[00:00:20.449,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'success'
+[00:00:24.798,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (443): Checking for deployment...
+[00:00:26.258,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (451): No deployment available
 ```
 
 Congratulation! You have updated the device. Mender server displays the success of the deployment.
@@ -177,3 +177,7 @@ The storage partition should be at least 4KB and must contains at least 3 sector
 #### Using an other network interface
 
 The example is currently using a W5500 module connected to the NUCLEO-L4A6ZG evaluation board according to the device tree overlay. It is possible to use an other module depending of your own hardware. The mender-mcu-client expect to have a TCP-IP interface but it is not constraint by the physical hardware.
+
+#### Using an other mender instance
+
+The communication with the server is done using HTTPS. In this example the Amazon RootCA certificate is integrated and registered in the system (see `tls_credential_add` in the `src/main.c` file). You should adapt this if using an other mender instance than the default one.
