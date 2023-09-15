@@ -57,7 +57,8 @@ static const unsigned char ca_certificate[] = {
  * @brief Mender client events
  */
 static K_EVENT_DEFINE(mender_client_events);
-#define MENDER_CLIENT_EVENT_RESTART (1 << 0)
+#define MENDER_CLIENT_EVENT_NETWORK_UP (1 << 0)
+#define MENDER_CLIENT_EVENT_RESTART    (1 << 1)
 
 /**
  * @brief Network management callback
@@ -88,6 +89,9 @@ net_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struc
             LOG_INF("Router: %s", net_addr_ntop(AF_INET, &iface->config.ip.ipv4->gw, buf, sizeof(buf)));
         }
     }
+
+    /* Application can now process to the initialization of the mender-mcu-client */
+    k_event_post(&mender_client_events, MENDER_CLIENT_EVENT_NETWORK_UP);
 }
 
 /**
@@ -224,6 +228,9 @@ main(void) {
     net_mgmt_init_event_callback(&mgmt_cb, net_event_handler, NET_EVENT_IPV4_ADDR_ADD);
     net_mgmt_add_event_callback(&mgmt_cb);
     net_dhcpv4_start(iface);
+
+    /* Wait for mender-mcu-client events */
+    k_event_wait_all(&mender_client_events, MENDER_CLIENT_EVENT_NETWORK_UP, false, K_FOREVER);
 
 #if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
     /* Initialize certificate */
