@@ -34,17 +34,16 @@ LOG_MODULE_REGISTER(mender_stm32l4a6_zephyr_example, LOG_LEVEL_INF);
 #include <zephyr/sys/reboot.h>
 
 /*
- * @brief Amazon RootCA certificate
- * @note This file is "CN=Starfield Services Root Certificate Authority - G2,O=Starfield Technologies\, Inc.,L=Scottsdale,ST=Arizona,C=US"
- *       It is retrieved from https://www.amazontrust.com/repository/ in DER format. It is converted to include file in application CMakeLists.txt.
+ * Amazon Root CA 1 certificate, retrieved from https://www.amazontrust.com/repository in DER format.
+ * It is converted to include file in application CMakeLists.txt.
  */
 #if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
 #include <zephyr/net/tls_credentials.h>
 #if defined(CONFIG_TLS_CREDENTIAL_FILENAMES)
-static const unsigned char ca_certificate[] = "SFSRootCAG2.cer";
+static const unsigned char ca_certificate[] = "AmazonRootCA1.cer";
 #else
 static const unsigned char ca_certificate[] = {
-#include "SFSRootCAG2.cer.inc"
+#include "AmazonRootCA1.cer.inc"
 };
 #endif
 #endif

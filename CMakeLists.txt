@@ -52,5 +52,5 @@ target_sources(app PRIVATE "src/main.c")
 target_compile_definitions(app PRIVATE PROJECT_NAME="mender-stm32l4a6-zephyr-example")
 target_compile_definitions(app PRIVATE PROJECT_VERSION="${PROJECT_VER}")
 
-# Generate RootCA include file
-generate_inc_file_for_target(app "src/SFSRootCAG2.cer" "${ZEPHYR_BINARY_DIR}/include/generated/SFSRootCAG2.cer.inc")
+# Generate Root CA include file
+generate_inc_file_for_target(app "src/AmazonRootCA1.cer" "${ZEPHYR_BINARY_DIR}/include/generated/AmazonRootCA1.cer.inc")
