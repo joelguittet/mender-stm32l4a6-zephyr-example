@@ -180,4 +180,5 @@ The example is currently using a W5500 module connected to the NUCLEO-L4A6ZG eva
 
 #### Using an other mender instance
 
-The communication with the server is done using HTTPS. In this example the Amazon RootCA certificate is integrated and registered in the system (see `tls_credential_add` in the `src/main.c` file). You should adapt this if using an other mender instance than the default one.
+The communication with the server is done using HTTPS. To get it working, the Root CA that is providing the server certificate should be integrated and registered in the application (see `tls_credential_add` in the `src/main.c` file). Format of the expected Root CA certificate is DER.
+In this example we are using the `https://hosted.mender.io` server. While checking the details of the server certificate in your browser, you will see that is is provided by Amazon Root CA 1. Thus the Amazon Root CA 1 certificate `AmazonRootCA1.cer` retrieved at `https://www.amazontrust.com/repository` is integrated in the application.
