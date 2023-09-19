@@ -41,7 +41,7 @@ Other settings are available in the Kconfig in sections "Mender General Options"
 
 Particularly, it is possible to activate the Device Troubleshoot add-on that will permit to display the Zephyr console of the device directly on the Mender interface as shown on the following screenshot.
 
-![Troubleshoot console](https://raw.githubusercontent.com/joelguittet/mender-stm32l4a6-example/master/.github/docs/troubleshoot.png)
+![Troubleshoot console](https://raw.githubusercontent.com/joelguittet/mender-stm32l4a6-zephyr-example/master/.github/docs/troubleshoot.png)
 
 In order to get the Device Troubleshoot add-on working, the following configuration keys must be defined in the `prj.conf` file:
 
