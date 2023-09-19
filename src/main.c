@@ -52,6 +52,8 @@ static const unsigned char ca_certificate[] = {
 #include "mender-configure.h"
 #include "mender-inventory.h"
 #include "mender-ota.h"
+#include "mender-shell.h"
+#include "mender-troubleshoot.h"
 
 /**
  * @brief Mender client events
@@ -120,6 +122,12 @@ authentication_success_cb(void) {
         return ret;
     }
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
+    if (MENDER_OK != (ret = mender_troubleshoot_activate())) {
+        LOG_ERR("Unable to activate troubleshoot add-on");
+        return ret;
+    }
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
 
     /* Validate the image if it is still pending */
     /* Note it is possible to do multiple diagnosic tests before validating the image */
@@ -196,7 +204,7 @@ restart_cb(void) {
  * @return MENDER_OK if the function succeeds, error code otherwise
  */
 static mender_err_t
-config_updated(mender_keystore_t *configuration) {
+config_updated_cb(mender_keystore_t *configuration) {
 
     /* Application can use the new device configuration now */
     /* In this example, we just print the content of the configuration received from the Mender server */
@@ -234,10 +242,10 @@ main(void) {
 
 #if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
     /* Initialize certificate */
-    tls_credential_add(CONFIG_MENDER_HTTP_CA_CERTIFICATE_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, ca_certificate, sizeof(ca_certificate));
+    tls_credential_add(CONFIG_MENDER_NET_CA_CERTIFICATE_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, ca_certificate, sizeof(ca_certificate));
 #endif
 
-    /* Read base MAC address of the STM32 */
+    /* Read base MAC address of the device */
     char                 mac_address[18];
     struct net_linkaddr *linkaddr = net_if_get_link_addr(iface);
     assert(NULL != linkaddr);
@@ -249,8 +257,9 @@ main(void) {
             linkaddr->addr[3],
             linkaddr->addr[4],
             linkaddr->addr[5]);
+    LOG_INF("MAC address of the device '%s'", mac_address);
 
-    /* Retrieve running version of the STM32 */
+    /* Retrieve running version of the device */
     LOG_INF("Running project '%s' version '%s'", PROJECT_NAME, PROJECT_VERSION);
 
     /* Compute artifact name */
@@ -286,7 +295,7 @@ main(void) {
     mender_configure_config_t    mender_configure_config    = { .refresh_interval = 0 };
     mender_configure_callbacks_t mender_configure_callbacks = {
 #ifndef CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE
-        .config_updated = config_updated,
+        .config_updated = config_updated_cb,
 #endif /* CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE */
     };
     assert(MENDER_OK == mender_configure_init(&mender_configure_config, &mender_configure_callbacks));
@@ -297,6 +306,13 @@ main(void) {
     assert(MENDER_OK == mender_inventory_init(&mender_inventory_config));
     LOG_INF("Mender inventory initialized");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
+    mender_troubleshoot_config_t    mender_troubleshoot_config = { .healthcheck_interval = 0 };
+    mender_troubleshoot_callbacks_t mender_troubleshoot_callbacks
+        = { .shell_begin = mender_shell_begin, .shell_resize = mender_shell_resize, .shell_write = mender_shell_write, .shell_end = mender_shell_end };
+    assert(MENDER_OK == mender_troubleshoot_init(&mender_troubleshoot_config, &mender_troubleshoot_callbacks));
+    LOG_INF("Mender troubleshoot initialized");
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
 
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
     /* Get mender configuration (this is just an example to illustrate the API) */
@@ -326,7 +342,15 @@ main(void) {
     /* Wait for mender-mcu-client events */
     k_event_wait_all(&mender_client_events, MENDER_CLIENT_EVENT_RESTART, false, K_FOREVER);
 
+    /* Deactivate mender add-ons */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
+    mender_troubleshoot_deactivate();
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
+
     /* Release mender add-ons */
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
+    mender_troubleshoot_exit();
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
     mender_inventory_exit();
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
@@ -334,7 +358,7 @@ main(void) {
     mender_configure_exit();
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
 
-    /* Exit mender-client */
+    /* Release mender-client */
     mender_client_exit();
 
     /* Restart */

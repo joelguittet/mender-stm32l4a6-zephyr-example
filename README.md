@@ -37,7 +37,22 @@ You may want to customize few interesting settings:
 - `MENDER_CLIENT_INVENTORY_REFRESH_INTERVAL` is the interval to publish inventory data.
 - `MENDER_CLIENT_CONFIGURE_REFRESH_INTERVAL` is the interval to refresh device configuration.
 
-Other settings are available in the Kconfig in sections "Example Configuration" and "Mender client Configuration". You can also refer to the mender-mcu-client API.
+Other settings are available in the Kconfig in sections "Mender General Options", "Mender Addons Options", "Mender Network Options", "Mender Scheduler Options", "Mender Storage Options" and "Example Configuration". You can also refer to the mender-mcu-client API and configuration keys.
+
+Particularly, it is possible to activate the Device Troubleshoot add-on that will permit to display the Zephyr console of the device directly on the Mender interface as shown on the following screenshot.
+
+![Troubleshoot console](https://raw.githubusercontent.com/joelguittet/mender-stm32l4a6-example/master/.github/docs/troubleshoot.png)
+
+In order to get the Device Troubleshoot add-on working, the following configuration keys must be defined in the `prj.conf` file:
+
+```
+CONFIG_HEAP_MEM_POOL_SIZE=1500
+CONFIG_SHELL_BACKEND_SERIAL=n
+CONFIG_SHELL_AUTOSTART=n
+CONFIG_SHELL_STACK_SIZE=3072
+```
+
+Important note: due to W5500 support limitation in Zephyr, a single socket can be opened at a time. Impact is that when the Device Troubleshoot connection is established, other connection will fail, including the connections made by the applications. This is why until a solution is found the Device Troubleshoot add-on is not activated by default in this example.
 
 ### Building and flashing the application
 
@@ -46,14 +61,14 @@ The application relies on mcuboot and requires to build a signed binary file to 
 Use the following commands to build and flash mcuboot (please adapt the paths to your own installation):
 
 ```
-west build -p always -s $HOME/zephyrproject/bootloader/mcuboot/boot/zephyr -d build-mcuboot -b nucleo_l4a6zg -- -DDTC_OVERLAY_FILE=path/to/mender-stm32l4a6-zephyr-example/nucleo_l4a6zg_mcuboot.overlay -DCONFIG_BOOT_SWAP_USING_MOVE=y -DCONFIG_BOOT_MAX_IMG_SECTORS=256
+west build -s $HOME/zephyrproject/bootloader/mcuboot/boot/zephyr -d build-mcuboot -b nucleo_l4a6zg -- -DDTC_OVERLAY_FILE=path/to/mender-stm32l4a6-zephyr-example/nucleo_l4a6zg_mcuboot.overlay -DCONFIG_BOOT_SWAP_USING_MOVE=y -DCONFIG_BOOT_MAX_IMG_SECTORS=256
 west flash -d build-mcuboot
 ```
 
 Use the following command to build, sign and flash the application (please adapt the paths to your own installation):
 
 ```
-west build -p always -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
+west build -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
 $HOME/zephyrproject/bootloader/mcuboot/scripts/imgtool.py sign --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --header-size 0x200 -S 0x7E000 --align 8 --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) build/zephyr/zephyr.hex build/zephyr/zephyr-signed.hex
 west flash --hex-file build/zephyr/zephyr-signed.hex
 ```
@@ -65,6 +80,7 @@ After flashing the application on the NUCLEO-L4A6ZG evaluation board and display
 ```
 [00:00:00.012,000] <inf> eth_w5500: W5500 Initialized
 *** Booting Zephyr OS build zephyr-v3.4.0 ***
+[00:00:00.017,000] <inf> mender_stm32l4a6_zephyr_example: MAC address of the device '00:08:dc:01:02:03'
 [00:00:00.027,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.1'
 [00:00:00.045,000] <inf> fs_nvs: 4 Sectors of 2048 bytes
 [00:00:00.053,000] <inf> fs_nvs: alloc wra: 0, 7e8
@@ -130,6 +146,7 @@ The device checks for the new deployment, downloads the artifact and installs it
 
 [00:00:00.012,000] <inf> eth_w5500: W5500 Initialized
 *** Booting Zephyr OS build zephyr-v3.4.0 ***
+[00:00:00.017,000] <inf> mender_stm32l4a6_zephyr_example: MAC address of the device '00:08:dc:01:02:03'
 [00:00:00.027,000] <inf> mender_stm32l4a6_zephyr_example: Running project 'mender-stm32l4a6-zephyr-example' version '0.2'
 [00:00:00.045,000] <inf> fs_nvs: 4 Sectors of 2048 bytes
 [00:00:00.052,000] <inf> fs_nvs: alloc wra: 1, 7d0
