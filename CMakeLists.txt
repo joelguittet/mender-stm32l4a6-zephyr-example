@@ -31,8 +31,9 @@ set_property(DIRECTORY . APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE
 
 # Extra components
 list(APPEND ZEPHYR_EXTRA_MODULES
-    "${CMAKE_CURRENT_SOURCE_DIR}/cJSON"
-    "${CMAKE_CURRENT_SOURCE_DIR}/mender-mcu-client"
+    "${CMAKE_CURRENT_SOURCE_DIR}/components/cJSON"
+    "${CMAKE_CURRENT_SOURCE_DIR}/components/msgpack-c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/components/mender-mcu-client"
 )
 
 # Kconfig options

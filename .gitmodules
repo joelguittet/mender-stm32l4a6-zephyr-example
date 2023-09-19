@@ -1,6 +1,9 @@
-[submodule "cJSON/cJSON"]
-	path = cJSON/cJSON
+[submodule "components/cJSON/cJSON"]
+	path = components/cJSON/cJSON
 	url = https://github.com/DaveGamble/cJSON.git
-[submodule "mender-mcu-client"]
-	path = mender-mcu-client
+[submodule "components/mender-mcu-client"]
+	path = components/mender-mcu-client
 	url = https://github.com/joelguittet/mender-mcu-client.git
+[submodule "components/msgpack-c/msgpack-c"]
+	path = components/msgpack-c/msgpack-c
+	url = https://github.com/msgpack/msgpack-c.git
