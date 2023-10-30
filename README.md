@@ -69,8 +69,8 @@ Use the following command to build, sign and flash the application (please adapt
 
 ```
 west build -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
-$HOME/zephyrproject/bootloader/mcuboot/scripts/imgtool.py sign --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --header-size 0x200 -S 0x7E000 --align 8 --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) build/zephyr/zephyr.hex build/zephyr/zephyr-signed.hex
-west flash --hex-file build/zephyr/zephyr-signed.hex
+west sign -t imgtool -- --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt)
+west flash --hex-file build/zephyr/zephyr.signed.hex
 ```
 
 ### Execution of the application
@@ -117,13 +117,13 @@ Change `VERSION.txt` file to `0.2`, rebuild and sign the firmware using the foll
 
 ```
 west build -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
-$HOME/zephyrproject/bootloader/mcuboot/scripts/imgtool.py sign --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --header-size 0x200 -S 0x7E000 --align 8 --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) build/zephyr/zephyr.bin build/zephyr/zephyr-signed.bin
+west sign -t imgtool -- --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt)
 ```
 
 Then create a new artifact using the following command line:
 
 ```
-path/to/mender-artifact write rootfs-image --compression none --device-type mender-stm32l4a6-zephyr-example --artifact-name mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) --output-path build/zephyr/mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt).mender --file build/zephyr/zephyr-signed.bin
+path/to/mender-artifact write rootfs-image --compression none --device-type mender-stm32l4a6-zephyr-example --artifact-name mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt) --output-path build/zephyr/mender-stm32l4a6-zephyr-example-v$(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt).mender --file build/zephyr/zephyr.signed.bin
 ```
 
 Upload the artifact `mender-stm32l4a6-zephyr-example-v0.2.mender` to the mender server and create a new deployment.
@@ -135,7 +135,7 @@ The device checks for the new deployment, downloads the artifact and installs it
 [00:07:03.608,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (463): Downloading deployment artifact with id '121eb07a-1188-4316-a58d-b798ee60988-
 [00:07:05.062,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'downloading'
 [00:07:07.798,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-artifact.c (380): Artifact has valid version
-[00:07:07.817,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (42): Start flashing OTA artifact 'zephyr-signed.bin' with size 293224
+[00:07:07.817,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/platform/board/zephyr/src/mender-ota.c (42): Start flashing OTA artifact 'zephyr.signed.bin' with size 293224
 [00:07:33.707,000] <inf> mender: CMAKE_SOURCE_DIR/mender-mcu-client/core/src/mender-client.c (473): Download done, installing artifact
 [00:07:35.124,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'installing'
 [00:09:15.191,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'rebooting'
