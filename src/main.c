@@ -25,6 +25,8 @@
  * SOFTWARE.
  */
 
+#include <version.h>
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(mender_stm32l4a6_zephyr_example, LOG_LEVEL_INF);
 
@@ -332,8 +334,11 @@ main(void) {
 
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
     /* Set mender inventory (this is just an example to illustrate the API) */
-    mender_keystore_t inventory[]
-        = { { .name = "latitude", .value = "45.8325" }, { .name = "longitude", .value = "6.864722" }, { .name = NULL, .value = NULL } };
+    mender_keystore_t inventory[] = { { .name = "zephyr-rtos", .value = KERNEL_VERSION_STRING },
+                                      { .name = "mender-mcu-client", .value = mender_client_version() },
+                                      { .name = "latitude", .value = "45.8325" },
+                                      { .name = "longitude", .value = "6.864722" },
+                                      { .name = NULL, .value = NULL } };
     if (MENDER_OK != mender_inventory_set(inventory)) {
         LOG_ERR("Unable to set mender inventory");
     }
