@@ -52,8 +52,6 @@ CONFIG_SHELL_AUTOSTART=n
 CONFIG_SHELL_STACK_SIZE=3072
 ```
 
-Important note: due to W5500 support limitation in Zephyr, a single socket can be opened at a time. Impact is that when the Device Troubleshoot connection is established, other connection will fail, including the connections made by the applications. This is why until a solution is found the Device Troubleshoot add-on is not activated by default in this example.
-
 ### Building and flashing the application
 
 The application relies on mcuboot and requires to build a signed binary file to be flashed on the evaluation board.
