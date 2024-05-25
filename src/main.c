@@ -25,6 +25,7 @@
  * SOFTWARE.
  */
 
+#include <app_version.h>
 #include <version.h>
 
 #include <zephyr/logging/log.h>
@@ -262,11 +263,11 @@ main(void) {
     LOG_INF("MAC address of the device '%s'", mac_address);
 
     /* Retrieve running version of the device */
-    LOG_INF("Running project '%s' version '%s'", PROJECT_NAME, PROJECT_VERSION);
+    LOG_INF("Running project '%s' version '%s'", PROJECT_NAME, APP_VERSION_STRING);
 
     /* Compute artifact name */
     char artifact_name[128];
-    sprintf(artifact_name, "%s-v%s", PROJECT_NAME, PROJECT_VERSION);
+    sprintf(artifact_name, "%s-v%s", PROJECT_NAME, APP_VERSION_STRING);
 
     /* Retrieve device type */
     char *device_type = PROJECT_NAME;
