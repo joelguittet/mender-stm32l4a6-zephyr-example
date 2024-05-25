@@ -25,10 +25,6 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
-# Read VERSION
-file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION.txt" PROJECT_VER LIMIT_COUNT 1)
-set_property(DIRECTORY . APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/VERSION.txt")
-
 # Extra components
 list(APPEND ZEPHYR_EXTRA_MODULES
     "${CMAKE_CURRENT_SOURCE_DIR}/components/cJSON"
@@ -51,7 +47,6 @@ target_sources(app PRIVATE "src/main.c")
 
 # Definitions
 target_compile_definitions(app PRIVATE PROJECT_NAME="mender-stm32l4a6-zephyr-example")
-target_compile_definitions(app PRIVATE PROJECT_VERSION="${PROJECT_VER}")
 
 # Generate Root CA include file
 generate_inc_file_for_target(app "src/AmazonRootCA1.cer" "${ZEPHYR_BINARY_DIR}/include/generated/AmazonRootCA1.cer.inc")
