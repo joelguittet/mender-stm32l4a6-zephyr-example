@@ -71,6 +71,30 @@ static K_EVENT_DEFINE(mender_client_events);
 static struct net_mgmt_event_callback mgmt_cb;
 
 /**
+ * @brief print DHCPv4 address information
+ * @param iface Interface
+ * @param if_addr Interface address
+ * @param user_data user data (not used)
+ */
+static void
+print_dhcpv4_addr(struct net_if *iface, struct net_if_addr *if_addr, void *user_data) {
+
+    char           hr_addr[NET_IPV4_ADDR_LEN];
+    struct in_addr netmask;
+
+    /* Check address type */
+    if (NET_ADDR_DHCP != if_addr->addr_type) {
+        return;
+    }
+
+    LOG_INF("IPv4 address: %s", net_addr_ntop(AF_INET, &if_addr->address.in_addr, hr_addr, NET_IPV4_ADDR_LEN));
+    LOG_INF("Lease time: %u seconds", iface->config.dhcpv4.lease_time);
+    netmask = net_if_ipv4_get_netmask_by_addr(iface, &if_addr->address.in_addr);
+    LOG_INF("Subnet: %s", net_addr_ntop(AF_INET, &netmask, hr_addr, NET_IPV4_ADDR_LEN));
+    LOG_INF("Router: %s", net_addr_ntop(AF_INET, &iface->config.ip.ipv4->gw, hr_addr, NET_IPV4_ADDR_LEN));
+}
+
+/**
  * @brief Network event handler
  * @param cb Network management callback
  * @param mgmt_event Event
@@ -85,15 +109,7 @@ net_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struc
     }
 
     /* Print interface information */
-    for (int i = 0; i < NET_IF_MAX_IPV4_ADDR; i++) {
-        if (NET_ADDR_DHCP == iface->config.ip.ipv4->unicast[i].addr_type) {
-            char buf[NET_IPV4_ADDR_LEN];
-            LOG_INF("Your address: %s", net_addr_ntop(AF_INET, &iface->config.ip.ipv4->unicast[i].address.in_addr, buf, sizeof(buf)));
-            LOG_INF("Lease time: %u seconds", iface->config.dhcpv4.lease_time);
-            LOG_INF("Subnet: %s", net_addr_ntop(AF_INET, &iface->config.ip.ipv4->netmask, buf, sizeof(buf)));
-            LOG_INF("Router: %s", net_addr_ntop(AF_INET, &iface->config.ip.ipv4->gw, buf, sizeof(buf)));
-        }
-    }
+    net_if_ipv4_addr_foreach(iface, print_dhcpv4_addr, NULL);
 
     /* Application can now process to the initialization of the mender-mcu-client */
     k_event_post(&mender_client_events, MENDER_CLIENT_EVENT_NETWORK_UP);
