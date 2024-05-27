@@ -67,7 +67,6 @@ Use the following command to build, sign and flash the application (please adapt
 
 ```
 west build -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
-west sign -t imgtool -- --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt)
 west flash --hex-file build/zephyr/zephyr.signed.hex
 ```
 
@@ -127,7 +126,6 @@ Change `VERSION.txt` file to `0.2`, rebuild and sign the firmware using the foll
 
 ```
 west build -b nucleo_l4a6zg path/to/mender-stm32l4a6-zephyr-example
-west sign -t imgtool -- --key $HOME/zephyrproject/bootloader/mcuboot/root-rsa-2048.pem --version $(head -n1 path/to/mender-stm32l4a6-zephyr-example/VERSION.txt)
 ```
 
 Then create a new artifact using the following command line:
