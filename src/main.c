@@ -265,14 +265,15 @@ main(void) {
     char                 mac_address[18];
     struct net_linkaddr *linkaddr = net_if_get_link_addr(iface);
     assert(NULL != linkaddr);
-    sprintf(mac_address,
-            "%02x:%02x:%02x:%02x:%02x:%02x",
-            linkaddr->addr[0],
-            linkaddr->addr[1],
-            linkaddr->addr[2],
-            linkaddr->addr[3],
-            linkaddr->addr[4],
-            linkaddr->addr[5]);
+    snprintf(mac_address,
+             sizeof(mac_address),
+             "%02x:%02x:%02x:%02x:%02x:%02x",
+             linkaddr->addr[0],
+             linkaddr->addr[1],
+             linkaddr->addr[2],
+             linkaddr->addr[3],
+             linkaddr->addr[4],
+             linkaddr->addr[5]);
     LOG_INF("MAC address of the device '%s'", mac_address);
 
     /* Retrieve running version of the device */
@@ -280,7 +281,7 @@ main(void) {
 
     /* Compute artifact name */
     char artifact_name[128];
-    sprintf(artifact_name, "%s-v%s", PROJECT_NAME, APP_VERSION_STRING);
+    snprintf(artifact_name, sizeof(artifact_name), "%s-v%s", PROJECT_NAME, APP_VERSION_STRING);
 
     /* Retrieve device type */
     char *device_type = PROJECT_NAME;
