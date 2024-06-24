@@ -111,8 +111,40 @@ net_event_handler(struct net_mgmt_event_callback *cb, uint32_t mgmt_event, struc
     /* Print interface information */
     net_if_ipv4_addr_foreach(iface, print_dhcpv4_addr, NULL);
 
-    /* Application can now process to the initialization of the mender-mcu-client */
+    /* Indicate the network is available */
     k_event_post(&mender_client_events, MENDER_CLIENT_EVENT_NETWORK_UP);
+}
+
+/**
+ * @brief Network connnect callback
+ * @return MENDER_OK if network is connected following the request, error code otherwise
+ */
+static mender_err_t
+network_connect_cb(void) {
+
+    LOG_INF("Mender client connect network");
+
+    /* This callback can be used to configure network connection */
+    /* Note that the application can connect the network before if required */
+    /* This callback only indicates the mender-client requests network access now */
+    /* Nothing to do in this example application just return network is available */
+    return MENDER_OK;
+}
+
+/**
+ * @brief Network release callback
+ * @return MENDER_OK if network is released following the request, error code otherwise
+ */
+static mender_err_t
+network_release_cb(void) {
+
+    LOG_INF("Mender client released network");
+
+    /* This callback can be used to release network connection */
+    /* Note that the application can keep network activated if required */
+    /* This callback only indicates the mender-client doesn't request network access now */
+    /* Nothing to do in this example application just return network is released */
+    return MENDER_OK;
 }
 
 /**
@@ -240,7 +272,7 @@ main(void) {
     net_mgmt_add_event_callback(&mgmt_cb);
     net_dhcpv4_start(iface);
 
-    /* Wait for mender-mcu-client events */
+    /* Wait until the network interface is operational */
     k_event_wait_all(&mender_client_events, MENDER_CLIENT_EVENT_NETWORK_UP, false, K_FOREVER);
 
 #if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
@@ -283,7 +315,9 @@ main(void) {
                                                     .authentication_poll_interval = 0,
                                                     .update_poll_interval         = 0,
                                                     .recommissioning              = false };
-    mender_client_callbacks_t mender_client_callbacks = { .authentication_success = authentication_success_cb,
+    mender_client_callbacks_t mender_client_callbacks = { .network_connect        = network_connect_cb,
+                                                          .network_release        = network_release_cb,
+                                                          .authentication_success = authentication_success_cb,
                                                           .authentication_failure = authentication_failure_cb,
                                                           .deployment_status      = deployment_status_cb,
                                                           .restart                = restart_cb };
