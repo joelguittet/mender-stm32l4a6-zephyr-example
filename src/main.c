@@ -53,8 +53,8 @@ static const unsigned char ca_certificate[] = {
 
 #include "mender-client.h"
 #include "mender-configure.h"
-#include "mender-inventory.h"
 #include "mender-flash.h"
+#include "mender-inventory.h"
 #include "mender-shell.h"
 #include "mender-troubleshoot.h"
 
@@ -126,22 +126,8 @@ authentication_success_cb(void) {
 
     LOG_INF("Mender client authenticated");
 
-    /* Activate mender add-ons */
-    /* The application can activate each add-on depending of the current status of the device */
-    /* In this example, add-ons are activated has soon as authentication succeeds */
-#ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
-    if (MENDER_OK != (ret = mender_configure_activate())) {
-        LOG_ERR("Unable to activate configure add-on");
-        return ret;
-    }
-#endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
-#ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
-    if (MENDER_OK != (ret = mender_inventory_activate())) {
-        LOG_ERR("Unable to activate inventory add-on");
-        return ret;
-    }
-#endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
+    /* Activate troubleshoot add-on (deactivated by default) */
     if (MENDER_OK != (ret = mender_troubleshoot_activate())) {
         LOG_ERR("Unable to activate troubleshoot add-on");
         return ret;
@@ -150,6 +136,7 @@ authentication_success_cb(void) {
 
     /* Validate the image if it is still pending */
     /* Note it is possible to do multiple diagnosic tests before validating the image */
+    /* In this example, authentication success with the mender-server is enough */
     if (MENDER_OK != (ret = mender_flash_confirm_image())) {
         LOG_ERR("Unable to validate the image");
         return ret;
@@ -169,7 +156,7 @@ authentication_failure_cb(void) {
 
     /* Check if confirmation of the image is still pending */
     if (true == mender_flash_is_image_confirmed()) {
-        LOG_ERR("Mender client authentication failed");
+        LOG_INF("Mender client authentication failed");
         return MENDER_OK;
     }
 
@@ -311,20 +298,24 @@ main(void) {
         .config_updated = config_updated_cb,
 #endif /* CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE */
     };
-    assert(MENDER_OK == mender_configure_init(&mender_configure_config, &mender_configure_callbacks));
-    LOG_INF("Mender configure initialized");
+    assert(MENDER_OK
+           == mender_client_register_addon(
+               (mender_addon_instance_t *)&mender_configure_addon_instance, (void *)&mender_configure_config, (void *)&mender_configure_callbacks));
+    LOG_INF("Mender configure add-on registered");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
     mender_inventory_config_t mender_inventory_config = { .refresh_interval = 0 };
-    assert(MENDER_OK == mender_inventory_init(&mender_inventory_config));
-    LOG_INF("Mender inventory initialized");
+    assert(MENDER_OK == mender_client_register_addon((mender_addon_instance_t *)&mender_inventory_addon_instance, (void *)&mender_inventory_config, NULL));
+    LOG_INF("Mender inventory add-on registered");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
     mender_troubleshoot_config_t    mender_troubleshoot_config = { .healthcheck_interval = 0 };
     mender_troubleshoot_callbacks_t mender_troubleshoot_callbacks
-        = { .shell_begin = mender_shell_begin, .shell_resize = mender_shell_resize, .shell_write = mender_shell_write, .shell_end = mender_shell_end };
-    assert(MENDER_OK == mender_troubleshoot_init(&mender_troubleshoot_config, &mender_troubleshoot_callbacks));
-    LOG_INF("Mender troubleshoot initialized");
+        = { .shell_begin = shell_begin_cb, .shell_resize = shell_resize_cb, .shell_write = shell_write_cb, .shell_end = shell_end_cb };
+    assert(MENDER_OK
+           == mender_client_register_addon(
+               (mender_addon_instance_t *)&mender_troubleshoot_addon_instance, (void *)&mender_troubleshoot_config, (void *)&mender_troubleshoot_callbacks));
+    LOG_INF("Mender troubleshoot add-on registered");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
 
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
@@ -355,26 +346,19 @@ main(void) {
     }
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
 
+    /* Finally activate mender client */
+    if (MENDER_OK != mender_client_activate()) {
+        LOG_ERR("Unable to activate mender-client");
+        goto RELEASE;
+    }
+
     /* Wait for mender-mcu-client events */
     k_event_wait_all(&mender_client_events, MENDER_CLIENT_EVENT_RESTART, false, K_FOREVER);
 
-    /* Deactivate mender add-ons */
-#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
-    mender_troubleshoot_deactivate();
-#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
+RELEASE:
 
-    /* Release mender add-ons */
-#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
-    mender_troubleshoot_exit();
-#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
-#ifdef CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY
-    mender_inventory_exit();
-#endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
-#ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
-    mender_configure_exit();
-#endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
-
-    /* Release mender-client */
+    /* Deactivate and release mender-client */
+    mender_client_deactivate();
     mender_client_exit();
 
     /* Restart */
