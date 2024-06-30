@@ -36,6 +36,11 @@ LOG_MODULE_REGISTER(mender_stm32l4a6_zephyr_example, LOG_LEVEL_INF);
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/sys/reboot.h>
 
+#ifdef CONFIG_LLEXT
+#include <zephyr/llext/llext.h>
+#include <zephyr/llext/buf_loader.h>
+#endif /* CONFIG_LLEXT */
+
 /*
  * Amazon Root CA 1 certificate, retrieved from https://www.amazontrust.com/repository in DER format.
  * It is converted to include file in application CMakeLists.txt.
@@ -69,6 +74,16 @@ static K_EVENT_DEFINE(mender_client_events);
  * @brief Network management callback
  */
 static struct net_mgmt_event_callback mgmt_cb;
+
+#ifdef CONFIG_LLEXT
+
+/**
+ * @brief Hello-world module data and size
+ */
+static void * hello_world_module_data = NULL;
+static size_t hello_world_module_size = 0;
+
+#endif /* CONFIG_LLEXT */
 
 /**
  * @brief print DHCPv4 address information
@@ -211,10 +226,60 @@ authentication_failure_cb(void) {
 static mender_err_t
 deployment_status_cb(mender_deployment_status_t status, char *desc) {
 
+    mender_err_t ret = MENDER_OK;
+
     /* We can do something else if required */
     LOG_INF("Deployment status is '%s'", desc);
 
-    return MENDER_OK;
+#ifdef CONFIG_LLEXT
+
+    /* Management of hello-world module */
+    if ((NULL != hello_world_module_data) && (0 != hello_world_module_size)) {
+
+        /* Treatment depending ofthe status */
+        if (MENDER_DEPLOYMENT_STATUS_INSTALLING == status) {
+
+            /* Load hello-world module */
+            struct llext_buf_loader buf_loader = LLEXT_BUF_LOADER(hello_world_module_data, hello_world_module_size);
+            struct llext_loader *   ldr        = &buf_loader.loader;
+            struct llext_load_param ldr_parm   = LLEXT_LOAD_PARAM_DEFAULT;
+            struct llext *          ext;
+            if (0 != llext_load(ldr, "hello-world", &ext, &ldr_parm)) {
+                LOG_ERR("Unable to load module");
+                ret = MENDER_FAIL;
+            } else {
+
+                /* Call hello_world function */
+                void (*hello_world_fn)() = llext_find_sym(&ext->exp_tab, "hello_world");
+                if (NULL != hello_world_fn) {
+                    hello_world_fn();
+                }
+
+                /* Unload module */
+                llext_unload(&ext);
+            }
+
+            /* Release memory */
+            if (NULL != hello_world_module_data) {
+                free(hello_world_module_data);
+                hello_world_module_data = NULL;
+            }
+            hello_world_module_size = 0;
+
+        } else if (MENDER_DEPLOYMENT_STATUS_FAILURE == status) {
+
+            /* Release memory */
+            if (NULL != hello_world_module_data) {
+                free(hello_world_module_data);
+                hello_world_module_data = NULL;
+            }
+            hello_world_module_size = 0;
+        }
+    }
+
+#endif /* CONFIG_LLEXT */
+
+    return ret;
 }
 
 /**
@@ -257,6 +322,41 @@ config_updated_cb(mender_keystore_t *configuration) {
 
 #endif /* CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE */
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
+
+#ifdef CONFIG_LLEXT
+
+static mender_err_t
+hello_world_module_cb(char *id, char *artifact_name, char *type, cJSON *meta_data, char *filename, size_t size, void *data, size_t index, size_t length) {
+
+    (void)id;
+    (void)artifact_name;
+    (void)type;
+    (void)meta_data;
+    (void)filename;
+    (void)size;
+    (void)index;
+    void *tmp;
+
+    /* Add data to the hello-world module data buffer */
+    if (NULL != data) {
+        if (NULL == (tmp = realloc(hello_world_module_data, hello_world_module_size + length))) {
+            LOG_ERR("Unable to allocate memory");
+            if (NULL != hello_world_module_data) {
+                free(hello_world_module_data);
+                hello_world_module_data = NULL;
+            }
+            hello_world_module_size = 0;
+            return MENDER_FAIL;
+        }
+        hello_world_module_data = tmp;
+        memcpy((void *)(((uint8_t *)hello_world_module_data) + hello_world_module_size), data, length);
+        hello_world_module_size += length;
+    }
+
+    return MENDER_OK;
+}
+
+#endif /* CONFIG_LLEXT */
 
 /**
  * @brief Main function
@@ -323,6 +423,12 @@ main(void) {
                                                           .restart                = restart_cb };
     assert(MENDER_OK == mender_client_init(&mender_client_config, &mender_client_callbacks));
     LOG_INF("Mender client initialized");
+
+#ifdef CONFIG_LLEXT
+    /* Register LLEXT hello-world module, no reboot after installing the module, no verification of artifact name to check the version of the module */
+    assert(MENDER_OK == mender_client_register_artifact_type("hello-world", &hello_world_module_cb, false, NULL));
+    LOG_INF("Mender client registered hello-world module");
+#endif /* CONFIG_LLEXT */
 
     /* Initialize mender add-ons */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE
