@@ -80,7 +80,7 @@ static struct net_mgmt_event_callback mgmt_cb;
 /**
  * @brief Hello-world module data and size
  */
-static void * hello_world_module_data = NULL;
+static void  *hello_world_module_data = NULL;
 static size_t hello_world_module_size = 0;
 
 #endif /* CONFIG_LLEXT */
@@ -241,9 +241,9 @@ deployment_status_cb(mender_deployment_status_t status, char *desc) {
 
             /* Load hello-world module */
             struct llext_buf_loader buf_loader = LLEXT_BUF_LOADER(hello_world_module_data, hello_world_module_size);
-            struct llext_loader *   ldr        = &buf_loader.loader;
+            struct llext_loader    *ldr        = &buf_loader.loader;
             struct llext_load_param ldr_parm   = LLEXT_LOAD_PARAM_DEFAULT;
-            struct llext *          ext;
+            struct llext           *ext;
             if (0 != llext_load(ldr, "hello-world", &ext, &ldr_parm)) {
                 LOG_ERR("Unable to load module");
                 ret = MENDER_FAIL;
@@ -408,13 +408,13 @@ main(void) {
     /* Initialize mender-client */
     mender_keystore_t         identity[]              = { { .name = "mac", .value = mac_address }, { .name = NULL, .value = NULL } };
     mender_client_config_t    mender_client_config    = { .identity                     = identity,
-                                                    .artifact_name                = artifact_name,
-                                                    .device_type                  = device_type,
-                                                    .host                         = NULL,
-                                                    .tenant_token                 = NULL,
-                                                    .authentication_poll_interval = 0,
-                                                    .update_poll_interval         = 0,
-                                                    .recommissioning              = false };
+                                                          .artifact_name                = artifact_name,
+                                                          .device_type                  = device_type,
+                                                          .host                         = NULL,
+                                                          .tenant_token                 = NULL,
+                                                          .authentication_poll_interval = 0,
+                                                          .update_poll_interval         = 0,
+                                                          .recommissioning              = false };
     mender_client_callbacks_t mender_client_callbacks = { .network_connect        = network_connect_cb,
                                                           .network_release        = network_release_cb,
                                                           .authentication_success = authentication_success_cb,
