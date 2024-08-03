@@ -75,8 +75,8 @@ west flash --hex-file build/zephyr/zephyr.signed.hex
 After flashing the application on the NUCLEO-L4A6ZG evaluation board and displaying logs, you should be able to see the following:
 
 ```
-*** Booting MCUboot v2.1.0-rc1-4-g898a1ca64a75 ***
-*** Using Zephyr OS build v3.6.0-7116-g40810983ead2 ***
+*** Booting MCUboot v2.1.0-rc1-36-gfb2cf0ec3da3 ***
+*** Using Zephyr OS build v3.7.0 ***
 I: Starting bootloader
 I: Primary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
 I: Scratch: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
@@ -152,8 +152,8 @@ The device checks for the new deployment, downloads the artifact and installs it
 [00:40:54.588,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'rebooting'
 [00:40:54.599,000] <inf> mender_stm32l4a6_zephyr_example: Mender client released network
 [00:40:54.610,000] <inf> mender_stm32l4a6_zephyr_example: Restarting system
-uart:~$ *** Booting MCUboot v2.1.0-rc1-4-g898a1ca64a75 ***
-*** Using Zephyr OS build v3.6.0-7116-g40810983ead2 ***
+uart:~$ *** Booting MCUboot v2.1.0-rc1-36-gfb2cf0ec3da3 ***
+*** Using Zephyr OS build v3.7.0 ***
 I: Starting bootloader
 I: Primary image: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
 I: Scratch: magic=unset, swap_type=0x1, copy_done=0x3, image_ok=0x3
