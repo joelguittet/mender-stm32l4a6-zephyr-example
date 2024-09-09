@@ -17,6 +17,23 @@
  * limitations under the License.
  */
 
+/ {
+    fstab {
+        compatible = "zephyr,fstab";
+        littlefs: littlefs {
+            compatible = "zephyr,fstab,littlefs";
+            read-size = <16>;
+            prog-size = <16>;
+            cache-size = <16>;
+            lookahead-size = <16>;
+            block-cycles = <512>;
+            partition = <&littlefs_partition>;
+            mount-point = "/littlefs";
+            automount;
+        };
+    };
+};
+
 &flash0 {
     partitions {
         compatible = "fixed-partitions";
@@ -28,25 +45,30 @@
             reg = <0x00000000 DT_SIZE_K(56)>;
             read-only;
         };
-        /* Application slot: 448KB */
+        /* Application slot: 384KB */
         slot0_partition: partition@e000 {
             label = "image-0";
-            reg = <0x0000E000 DT_SIZE_K(448)>;
+            reg = <0x0000E000 DT_SIZE_K(384)>;
         };
-        /* Update slot: 448KB */
-        slot1_partition: partition@7e000 {
+        /* Update slot: 384KB */
+        slot1_partition: partition@6e000 {
             label = "image-1";
-            reg = <0x0007E000 DT_SIZE_K(448)>;
+            reg = <0x0006E000 DT_SIZE_K(384)>;
         };
         /* Swap slot: 64KB */
-        scratch_partition: partition@ee000 {
+        scratch_partition: partition@ce000 {
             label = "image-scratch";
-            reg = <0x000EE000 DT_SIZE_K(64)>;
+            reg = <0x000CE000 DT_SIZE_K(64)>;
         };
         /* Storage slot: 8KB */
-        storage_partition: partition@fe000 {
+        storage_partition: partition@de000 {
             label = "storage";
-            reg = <0x000FE000 DT_SIZE_K(8)>;
+            reg = <0x000DE000 DT_SIZE_K(8)>;
+        };
+        /* LittleFS slot: 128KB */
+        littlefs_partition: partition@e0000 {
+            label = "littlefs";
+            reg = <0x000E0000 DT_SIZE_K(128)>;
         };
     };
 };

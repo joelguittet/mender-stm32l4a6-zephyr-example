@@ -28,6 +28,13 @@ LOG_MODULE_REGISTER(mender_stm32l4a6_zephyr_example, LOG_LEVEL_INF);
 #include <zephyr/net/net_mgmt.h>
 #include <zephyr/sys/reboot.h>
 
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
+#ifdef CONFIG_MENDER_CLIENT_TROUBLESHOOT_FILE_TRANSFER
+#include <zephyr/fs/fs.h>
+#include <zephyr/fs/littlefs.h>
+#endif /* CONFIG_MENDER_CLIENT_TROUBLESHOOT_FILE_TRANSFER */
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
+
 #ifdef CONFIG_LLEXT
 #include <zephyr/llext/llext.h>
 #include <zephyr/llext/buf_loader.h>
@@ -315,6 +322,136 @@ config_updated_cb(mender_keystore_t *configuration) {
 #endif /* CONFIG_MENDER_CLIENT_CONFIGURE_STORAGE */
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_CONFIGURE */
 
+#ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
+#ifdef CONFIG_MENDER_CLIENT_TROUBLESHOOT_FILE_TRANSFER
+
+static mender_err_t
+file_transfer_stat_cb(char *path, size_t **size, uint32_t **uid, uint32_t **gid, uint32_t **mode, time_t **time) {
+
+    assert(NULL != path);
+    struct fs_dirent stats;
+    mender_err_t     ret = MENDER_OK;
+
+    /* Get statistics of file */
+    if (0 != fs_stat(path, &stats)) {
+        LOG_ERR("Unable to get statistics of file '%s'", path);
+        ret = MENDER_FAIL;
+        goto FAIL;
+    }
+    /* Size is optional */
+    if (NULL != size) {
+        if (NULL == (*size = (size_t *)malloc(sizeof(size_t)))) {
+            LOG_ERR("Unable to allocate memory");
+            ret = MENDER_FAIL;
+            goto FAIL;
+        }
+        **size = stats.size;
+    }
+    /* Mode is not optional and file must be a regular file to be downloaded by the server */
+    if (NULL != mode) {
+        if (NULL == (*mode = (uint32_t *)malloc(sizeof(uint32_t)))) {
+            LOG_ERR("Unable to allocate memory");
+            ret = MENDER_FAIL;
+            goto FAIL;
+        }
+        **mode = (FS_DIR_ENTRY_FILE == stats.type) ? 0100000 : 0040000;
+    }
+
+FAIL:
+
+    return ret;
+}
+
+static mender_err_t
+file_transfer_open_cb(char *path, char *mode, void **handle) {
+
+    assert(NULL != path);
+    assert(NULL != mode);
+    int err;
+
+    /* Allocate file handle */
+    struct fs_file_t *file;
+    if (NULL == (file = malloc(sizeof(struct fs_file_t)))) {
+        LOG_ERR("Unable to allocate memory");
+        return MENDER_FAIL;
+    }
+    fs_file_t_init(file);
+
+    /* Open file */
+    LOG_INF("Opening file '%s' with mode '%s'", path, mode);
+    if (!strcmp(mode, "rb")) {
+        if ((err = fs_open(file, path, FS_O_READ)) < 0) {
+            LOG_ERR("Unable to open file '%s' (err=%d)", path, err);
+            free(file);
+            return MENDER_FAIL;
+        }
+    } else {
+        if ((err = fs_open(file, path, FS_O_CREATE | FS_O_WRITE)) < 0) {
+            LOG_ERR("Unable to open file '%s'  (err=%d)", path, err);
+            free(file);
+            return MENDER_FAIL;
+        }
+    }
+    *handle = file;
+
+    return MENDER_OK;
+}
+
+static mender_err_t
+file_transfer_read_cb(void *handle, void *data, size_t *length) {
+
+    assert(NULL != handle);
+    assert(NULL != data);
+    assert(NULL != length);
+    int err;
+
+    /* Read file */
+    if ((err = fs_read((struct fs_file_t *)handle, data, *length)) < 0) {
+        LOG_ERR("Unable to read data from the file (err=%d)", err);
+        return MENDER_FAIL;
+    }
+    *length = err;
+
+    return MENDER_OK;
+}
+
+static mender_err_t
+file_transfer_write_cb(void *handle, void *data, size_t length) {
+
+    assert(NULL != handle);
+    assert(NULL != data);
+    int err;
+
+    /* Write file */
+    if ((err = fs_write((struct fs_file_t *)handle, data, length)) < 0) {
+        LOG_ERR("Unable to write data to the file (err=%d)", err);
+        return MENDER_FAIL;
+    }
+
+    return MENDER_OK;
+}
+
+static mender_err_t
+file_transfer_close_cb(void *handle) {
+
+    assert(NULL != handle);
+    int err;
+
+    /* Close file */
+    LOG_INF("Closing file");
+    if ((err = fs_close((struct fs_file_t *)handle)) < 0) {
+        LOG_ERR("Unable to close file (err=%d)", err);
+    }
+
+    /* Release memory */
+    free(handle);
+
+    return MENDER_OK;
+}
+
+#endif /* CONFIG_MENDER_CLIENT_TROUBLESHOOT_FILE_TRANSFER */
+#endif /* CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT */
+
 #ifdef CONFIG_LLEXT
 
 static mender_err_t
@@ -441,9 +578,19 @@ main(void) {
     LOG_INF("Mender inventory add-on registered");
 #endif /* CONFIG_MENDER_CLIENT_ADD_ON_INVENTORY */
 #ifdef CONFIG_MENDER_CLIENT_ADD_ON_TROUBLESHOOT
-    mender_troubleshoot_config_t    mender_troubleshoot_config = { .healthcheck_interval = 0 };
-    mender_troubleshoot_callbacks_t mender_troubleshoot_callbacks
-        = { .shell_begin = shell_begin_cb, .shell_resize = shell_resize_cb, .shell_write = shell_write_cb, .shell_end = shell_end_cb };
+    mender_troubleshoot_config_t    mender_troubleshoot_config    = { .healthcheck_interval = 0 };
+    mender_troubleshoot_callbacks_t mender_troubleshoot_callbacks = {
+#ifdef CONFIG_MENDER_CLIENT_TROUBLESHOOT_FILE_TRANSFER
+        .file_transfer = { .stat  = file_transfer_stat_cb,
+                           .open  = file_transfer_open_cb,
+                           .read  = file_transfer_read_cb,
+                           .write = file_transfer_write_cb,
+                           .close = file_transfer_close_cb },
+#endif /* CONFIG_MENDER_CLIENT_TROUBLESHOOT_FILE_TRANSFER */
+#ifdef CONFIG_MENDER_CLIENT_TROUBLESHOOT_SHELL
+        .shell = { .open = mender_shell_open, .resize = mender_shell_resize, .write = mender_shell_write, .close = mender_shell_close }
+#endif /* CONFIG_MENDER_CLIENT_TROUBLESHOOT_SHELL */
+    };
     assert(MENDER_OK
            == mender_client_register_addon(
                (mender_addon_instance_t *)&mender_troubleshoot_addon_instance, (void *)&mender_troubleshoot_config, (void *)&mender_troubleshoot_callbacks));
