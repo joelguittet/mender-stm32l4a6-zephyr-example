@@ -13,7 +13,7 @@ This project is used with a [NUCLEO-L4A6ZG](https://www.st.com/en/evaluation-too
 
 ![NUCLEO-L4A6ZG and W5500 wiring](https://raw.githubusercontent.com/joelguittet/mender-stm32l4a6-zephyr-example/master/.github/docs/wiring.png)
 
-The project is built using Zephyr RTOS v3.7.0 and Zephyr SDK >= v0.16.0. It depends on [cJSON](https://github.com/DaveGamble/cJSON). There is no other dependencies.
+The project is built using Zephyr RTOS v3.7.x (v3.7-branch) and Zephyr SDK >= v0.16.0. It depends on [cJSON](https://github.com/DaveGamble/cJSON). There is no other dependencies.
 
 To start using Mender, we recommend that you begin with the Getting started section in [the Mender documentation](https://docs.mender.io).
 
@@ -39,7 +39,7 @@ You may want to customize few interesting settings:
 
 Other settings are available in the Kconfig. You can also refer to the mender-mcu-client API and configuration keys.
 
-Particularly, it is possible to activate the Device Troubleshoot add-on that will permit to display the Zephyr console of the device directly on the Mender interface as shown on the following screenshot.
+Particularly, it is possible to activate the Device Troubleshoot add-on that will permit to display the Zephyr console of the device directly on the Mender interface as shown on the following screenshot. File Transfer feature can be activated too. A littlefs partition is used to upload/download files to/from the Mender server.
 
 ![Troubleshoot console](https://raw.githubusercontent.com/joelguittet/mender-stm32l4a6-zephyr-example/master/.github/docs/troubleshoot.png)
 
@@ -47,9 +47,12 @@ In order to get the Device Troubleshoot add-on working, the following configurat
 
 ```
 CONFIG_HEAP_MEM_POOL_SIZE=1500
+CONFIG_ZVFS_OPEN_MAX=16
 CONFIG_SHELL_BACKEND_SERIAL=n
 CONFIG_SHELL_AUTOSTART=n
 CONFIG_SHELL_STACK_SIZE=3072
+CONFIG_FILE_SYSTEM=y
+CONFIG_FILE_SYSTEM_LITTLEFS=y
 ```
 
 ### Building and flashing the application
@@ -224,6 +227,12 @@ The device checks for the new deployment, downloads the artifact and call the `h
 Hello, world, from an llext!
 [00:00:36.817,000] <inf> mender_stm32l4a6_zephyr_example: Deployment status is 'success'
 ```
+
+### Using Device Troubleshoot add-on
+
+The Device Troubleshoot add-on permits to display the Zephyr Shell on the Mender interface. Autocompletion and colors are available.
+
+The Device Troubleshoot add-on also permits to upload/download files to/from the Mender server. The littlefs partition mounted at `/littlefs` is used to demonstrate this feature. To send a file to the device, destination path must start with `/littlefs`. To download a file from the device the full path is expected, starting with `/littlefs`.
 
 ### Using an other zephyr evaluation board
 
