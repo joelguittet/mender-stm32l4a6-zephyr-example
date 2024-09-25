@@ -586,6 +586,9 @@ main(void) {
                            .read  = file_transfer_read_cb,
                            .write = file_transfer_write_cb,
                            .close = file_transfer_close_cb },
+#ifdef CONFIG_MENDER_CLIENT_TROUBLESHOOT_PORT_FORWARDING
+        .port_forwarding = { .connect = NULL, .send = NULL, .close = NULL },
+#endif /* CONFIG_MENDER_CLIENT_TROUBLESHOOT_PORT_FORWARDING */
 #endif /* CONFIG_MENDER_CLIENT_TROUBLESHOOT_FILE_TRANSFER */
 #ifdef CONFIG_MENDER_CLIENT_TROUBLESHOOT_SHELL
         .shell = { .open = mender_shell_open, .resize = mender_shell_resize, .write = mender_shell_write, .close = mender_shell_close }
