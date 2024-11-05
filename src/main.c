@@ -40,20 +40,40 @@ LOG_MODULE_REGISTER(mender_stm32l4a6_zephyr_example, LOG_LEVEL_INF);
 #include <zephyr/llext/buf_loader.h>
 #endif /* CONFIG_LLEXT */
 
+#ifdef CONFIG_NET_SOCKETS_SOCKOPT_TLS
+#include <zephyr/net/tls_credentials.h>
+#endif /* CONFIG_NET_SOCKETS_SOCKOPT_TLS */
+
 /*
  * Amazon Root CA 1 certificate, retrieved from https://www.amazontrust.com/repository in DER format.
  * It is converted to include file in application CMakeLists.txt.
  */
-#if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
-#include <zephyr/net/tls_credentials.h>
-#if defined(CONFIG_TLS_CREDENTIAL_FILENAMES)
-static const unsigned char ca_certificate[] = "AmazonRootCA1.cer";
+#ifdef CONFIG_NET_SOCKETS_SOCKOPT_TLS
+#ifdef CONFIG_TLS_CREDENTIAL_FILENAMES
+static const unsigned char ca_certificate_primary[] = "AmazonRootCA1.der";
 #else
-static const unsigned char ca_certificate[] = {
-#include "AmazonRootCA1.cer.inc"
+static const unsigned char ca_certificate_primary[] = {
+#include "AmazonRootCA1.der.inc"
 };
-#endif
-#endif
+#endif /* CONFIG_TLS_CREDENTIAL_FILENAMES */
+#endif /* CONFIG_NET_SOCKETS_SOCKOPT_TLS */
+
+/*
+ * Google Trust Services Root R4 certificate, retrieved from https://pki.goog/repository in DER format.
+ * It is converted to include file in application CMakeLists.txt.
+ * This secondary Root CA certificate is to be used if the device is connected to a free hosted Mender account (for which artifacts are saved on a Cloudflare server instead of the Amazon S3 storage)
+ */
+#ifdef CONFIG_NET_SOCKETS_SOCKOPT_TLS
+#if (0 != CONFIG_MENDER_NET_CA_CERTIFICATE_TAG_SECONDARY)
+#ifdef CONFIG_TLS_CREDENTIAL_FILENAMES
+static const unsigned char ca_certificate_secondary[] = "GoogleTrustServicesR4.der";
+#else
+static const unsigned char ca_certificate_secondary[] = {
+#include "GoogleTrustServicesR4.der.inc"
+};
+#endif /* CONFIG_TLS_CREDENTIAL_FILENAMES */
+#endif /* (0 != CONFIG_MENDER_NET_CA_CERTIFICATE_TAG_SECONDARY) */
+#endif /* CONFIG_NET_SOCKETS_SOCKOPT_TLS */
 
 #include "mender-client.h"
 #include "mender-configure.h"
@@ -504,10 +524,17 @@ main(void) {
     /* Wait until the network interface is operational */
     k_event_wait_all(&mender_client_events, MENDER_CLIENT_EVENT_NETWORK_UP, false, K_FOREVER);
 
-#if defined(CONFIG_NET_SOCKETS_SOCKOPT_TLS)
-    /* Initialize certificate */
-    tls_credential_add(CONFIG_MENDER_NET_CA_CERTIFICATE_TAG, TLS_CREDENTIAL_CA_CERTIFICATE, ca_certificate, sizeof(ca_certificate));
-#endif
+#ifdef CONFIG_NET_SOCKETS_SOCKOPT_TLS
+    /* Initialize certificate(s) */
+    assert(0
+           == tls_credential_add(
+               CONFIG_MENDER_NET_CA_CERTIFICATE_TAG_PRIMARY, TLS_CREDENTIAL_CA_CERTIFICATE, ca_certificate_primary, sizeof(ca_certificate_primary)));
+#if (0 != CONFIG_MENDER_NET_CA_CERTIFICATE_TAG_SECONDARY)
+    assert(0
+           == tls_credential_add(
+               CONFIG_MENDER_NET_CA_CERTIFICATE_TAG_SECONDARY, TLS_CREDENTIAL_CA_CERTIFICATE, ca_certificate_secondary, sizeof(ca_certificate_secondary)));
+#endif /* (0 != CONFIG_MENDER_NET_CA_CERTIFICATE_TAG_SECONDARY) */
+#endif /* CONFIG_NET_SOCKETS_SOCKOPT_TLS */
 
     /* Read base MAC address of the device */
     char                 mac_address[18];
